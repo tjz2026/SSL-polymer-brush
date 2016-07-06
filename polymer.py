@@ -21,8 +21,8 @@ import scipy.sparse.linalg
 import time
 
 def polymer_scft(D):
-    Nx=200
-    Ns=200
+    Nx=400
+    Ns=300
     qf_y=np.zeros((Ns+1,Nx,Nx))
     qf=np.zeros((Ns+1,Nx))
     qfr=np.zeros((Ns+1,Nx+1))
@@ -36,6 +36,7 @@ def polymer_scft(D):
     phi=np.zeros((Nx))
     exp_w=np.zeros((Nx))
     exp_k2=np.zeros((Nx))
+    exp_k2_dct=np.zeros((Nx))
     d_kx=2*np.pi/D
     half_kx=Nx/2
     kx=np.arange(Nx,dtype=float)
@@ -53,26 +54,29 @@ def polymer_scft(D):
     local_data_rout=np.zeros((Nx))
     for x in np.arange(Nx) :
         k2=kx[x]**2
+        k2_dct=(np.pi/D)*x*1.0
+        k2_dct=k2_dct**2
         exp_k2[x]=np.exp(-1.0*ds*k2)
+        exp_k2_dct[x]=np.exp(-1.0*ds*k2_dct)
 
     qf[0,:]=1.0
     for x in np.arange(Nx):
-        qf[0,x]=np.exp(-2000.0*((x-60)*1.0/Nx)**2)*Nx
+        qf[0,x]=np.exp(-2000.0*((x-Nx/2)*1.0/Nx)**2)*Nx
         chemw[x]=-30*np.cos(np.pi*x*2.0/Nx)
         exp_w[x]=np.exp(chemw[x]*(-0.5*ds))
     pl.plot(exp_w[:],'r')
     pl.show()
     for s in np.arange(1,Ns+1):
         #local_data[:]=qf[s-1,:]*exp_w[:]+0.0j
-        local_data_rin[:]=qf[s-1,:]*exp_w[:]
         #local_data=np.fft.fftn(local_data)
-        local_data_rin=fftpack.dct(x, type=2, norm='ortho')
         #local_data[:]=local_data[:]*exp_k2[:]
-        local_data_rin[:]=local_data_rin[:]*exp_k2[:]
         #local_data=np.fft.ifftn(local_data)
+        #qf[s,:]=local_data[:].real*exp_w[:]
+        local_data_rin[:]=qf[s-1,:]*exp_w[:]
+        local_data_rin=fftpack.dct(local_data_rin, type=2, norm='ortho')
+        local_data_rin[:]=local_data_rin[:]*exp_k2_dct[:]
         local_data_rout=fftpack.idct(local_data_rin, type=2, norm='ortho')
         qf[s,:]=local_data_rout[:]*exp_w[:]
-        #qf[s,:]=local_data[:].real*exp_w[:]
     qb[Ns,:]=0.0
     
     for z0 in np.arange(Nx) :
@@ -133,19 +137,17 @@ def polymer_scft(D):
     #pl.plot(rhof[35,50,:])
     #pl.plot(rhof[40,50,:])
     #pl.show()
-    qfr[0,:]=1.0 
     #qfr[0,90]=1.0*Nx 
-    chemw[:]=1.0
     for x in np.arange(Nx):
-        qfr[0,x]=np.exp(-2000.0*((x-60)*1.0/Nx)**2)*Nx
+        qfr[0,x]=np.exp(-2000.0*((x-Nx/2)*1.0/Nx)**2)*Nx
         chemw[x]=-30*np.cos(np.pi*x*2.0/Nx)
     crank_nicolson(Nx,D,Ns,ds,chemw,qfr)
     #pl.plot(qfr[:,50])
     #pl.plot(qfr[1,:],'y')
     #pl.plot(qfr[5,:])
     #pl.plot(qfr[10,:])
-    pl.plot(qf[50,:],'b')
-    pl.plot(qfr[50,:],'r^')
+    pl.plot(qf[Ns/10,:],'b')
+    pl.plot(qfr[Ns/10,:],'r^')
     #pl.plot(chemw,'b^')
     #pl.plot(qfr[20,:])
     #pl.plot(qfr[40,:])
