@@ -28,6 +28,8 @@ def PolymerBrush_SSL(D):
     global Nm
     global dx_f
     global dx_c
+    global delta
+    delta=1.0
     Nx=100
     dx_c=1.0/(Nx+1.0) # dx for coarse grid
     xi=np.zeros(Nx)
@@ -54,9 +56,11 @@ def PolymerBrush_SSL(D):
     #print "xij[Nx-1]",xij[Nx-1,:]
     #print "xji[Nx-1]",xji[Nx-1,:]
     # initial guess for g(y)
-    for i in np.arange(Nx):
-        g_e[i]=xi[i]/np.sqrt((1.0-xi[i]**2))
-    pl.plot(np.log(g_e[Nx-Nf:200]),'r^')
+    for i in np.arange(0,10):
+        g_e[i]=xi[i]/np.sqrt((1.0-xi[i]**2))+2.5*np.abs(np.sin(xi[i]/1.0))
+    for i in np.arange(10,Nx):
+        g_e[i]=xi[i]/np.sqrt((1.0-xi[i]**2))+0.2*np.abs(np.sin(xi[i]/1.0))
+    pl.plot(g_e[:],'r^')
     pl.show()
     sum_a1=simps(g_e[1:Nx]/E0y[1:Nx],dx=dx_c)
     print "sum_a1=",sum_a1
@@ -91,6 +95,8 @@ def PolymerBrush_SSL(D):
     #print "E0y[:,0],",Exy[:,0]/(0.5*np.pi*xi[:])
     global Exxy
     global Eyxy
+    global Exxy0
+    Exxy0=np.zeros((Nx,Nx,Nm)) # interpolate on x
     Exxy=np.zeros((Nx,Nx,Nm)) # interpolate on x
     Eyxy=np.zeros((Nx,Nx,Nm)) # interpolate on y
     for i in np.arange(Nx): # this is y
@@ -152,26 +158,34 @@ def PolymerBrush_SSL(D):
 
     # starting to solve the 3*Nx nonlinear equations
     X0=np.zeros(3*Nx) # intial guess for g(y), phi_x(x) and lambda(y)
+    global X,F
     X=np.zeros(3*Nx) # the solution 
     F=np.zeros(3*Nx) # The functions
     for i in np.arange(Nx):
         X0[i]=g_e[i]
         X0[i+Nx]=-(3.0/16.0)*delta**2*((np.pi*xi[i])**2)
         X0[i+2*Nx]=(3.0/16.0)*delta**2*(np.pi**2)*(xi[i]**3)/(np.sqrt(1.0-xi[i]**2))
-    FUNC(X0)
-    #X = scipy.optimize.newton_krylov(FUNC, X0, verbose=True,f_tol=1e-3)
 
+    Exxy0[:,:,:]=Exxy[:,:,:]
+    F[:]=0.0  
+    FUNC(X0)
+    print "bf F",F[0:300]
+    X = scipy.optimize.newton_krylov(FUNC, X0, verbose=True,f_tol=1e-3)
+    print "X",X[0:100]
+    print "F",F[0:300]
+    pl.plot(X[0:300],'r')
+    pl.show()
 
 def FUNC(X):
     ## doing the integral of local density:
     # this integral of density has two sigularity near each boundaries, needs to be considered
     #carefully.
     # First, build the E(x,y) function.
-    Exy_build(X)
-
-    ge_intp=np.zeros(Nx*Nm)
-    x_intp=np.zeros(10)
+    #Exy_build(X)
     F[:]=0.0
+    ge_intp=np.zeros(Nx*Nm)
+    phi_intp=np.zeros(Nx*Nm)
+    x_intp=np.zeros(10)
     # interpolate g(y)*np.sqrt(1.0-g(y)^2)
     for i in np.arange(Nx/10):
         blk_s=i*10
@@ -179,49 +193,80 @@ def FUNC(X):
         x_intp[:]=np.sqrt(1.0-xi[blk_s:blk_e]**2)
         intp=np.polyfit(xi[blk_s:blk_e], X[blk_s:blk_e]*x_intp[:],6)
         p10 = np.poly1d(intp)
+        intp1=np.polyfit(xi[blk_s:blk_e], X[Nx+blk_s:Nx+blk_e],3) # for phi(x), should not be large
+        p11 = np.poly1d(intp1)
         for j in np.arange(blk_s,blk_e,1):
             ge_intp[j*Nm:(j+1)*Nm]=p10(xji[j,0:Nm])
+            phi_intp[j*Nm:(j+1)*Nm]=p11(xij[j,0:Nm])
               
     for i in np.arange(0,Nx,1):
         for j in np.arange(i,Nx,1):
             F[i]=F[i]+simps(ge_intp[j*Nm:(j+1)*Nm]/(np.sqrt(1.0-xji[j,:]**2)*Eyxy[i,j,:]),dx=dx_f)
         F[i]=F[i]-1.0      
-    pl.plot(F[0:Nx]+1.0,'r^')
-    pl.show()
+    #pl.plot(F[0:Nx]+1.0,'r^')
+    #pl.show()
     # calculate the F2: equal length condition
+    #for i in np.arange(Nx): # this is y
+    #    for j in np.arange(i+1): # this is x, x is faster
+    #        F[i+Nx]=F[i+Nx]+simps(1.0/Exxy[i,j,:],dx=dx_f)
+    #    F[i+Nx]=F[i+Nx]-1.0 
+    ## calculate the F3:           
     for i in np.arange(Nx): # this is y
         for j in np.arange(i+1): # this is x, x is faster
-            F[i+Nx]=F[i+Nx]+simps(1.0/Exxy[i,j,:],dx=dx_f)
-              
+            F[i+2*Nx]=F[i+2*Nx]+(3.0/4.0)*delta**2*simps(Exxy[i,j,:],dx=dx_f)  
+            F[i+2*Nx]=F[i+2*Nx]+simps((1.0/Exxy[i,j,:])*phi_intp[j*Nm:(j+1)*Nm],dx=dx_f)  
 
-    pl.plot(F[0:100],'r^')
-    pl.show()
+    #pl.plot(F[:],'r^')
+    #pl.show()
     return F
 
-
 def Exy_build(X):
-    eps=0.0
+    global Exy
+    global Exxy
+    global Eyxy
+    eps=1.0e-10
     for i in np.arange(Nx): # this is y
         for j in np.arange(i+1): # this is x, x is faster
             Exy[i,j]=(4.0/3.0)*delta**(-2)*(X[j+Nx]+X[i+2*Nx]/X[i])
-            Exy[i,j]=np.sqrt(Exy[i,j])  
+            if Exy[i,j]<0.0 :
+               Exy[i,j]=0.0
+            Exy[i,j]=np.sqrt(Exy[i,j]+eps)  
 
 
     # the first four grid are replaced by anlytical solution
-    for i in np.arange(0,5): # this is y
+    error_sum=0.0
+    for i in np.arange(0,10): # this is y
         for j in np.arange(i+1): # this is x, x is faster
             for k in np.arange(Nm):
                 Exxy[i,j,k]=0.5*np.pi*np.sqrt(xi[i]**2-xij[j,k]**2+eps)
-    for i in np.arange(5,Nx): # this is y
-        intp=np.polyfit(xi[i-5:i+1], Exy[i,i-5:i+1],5)
-        p10 = np.poly1d(intp)
-        for j in np.arange(i+1): # this is x, x is faster
-            Exxy[i,j,:]=p10(xij[j,:])
-    #for i in np.arange(Nx): # this is x
+                #error_sum=error_sum+np.abs(Exxy[i,j,k]-Exxy0[i,j,k])
+    for i in np.arange(10,Nx): # this is y
+        N_intv=i/10
+        for ii in np.arange(N_intv):
+            x_s=i-10*(ii+1)+1
+            x_e=i-10*ii
+            intp=np.polyfit(xi[x_s:x_e+1], Exy[i,x_s:x_e+1],6)
+            p10 = np.poly1d(intp)
+            for j in np.arange(x_s,x_e+1,1): # this is x, x is faster
+                Exxy[i,j,:]=p10(xij[j,:])
+    #for i in np.arange(10,Nx): # this is y
+    #    for j in np.arange(i+1): # this is x, x is faster
+    #        for k in np.arange(Nm):
+    #            error_sum=error_sum+np.abs(Exxy[i,j,k]-Exxy0[i,j,k])
+    #print "now error=",error_sum
+    #pl.imshow(Exxy[0,:,:])
+    #pl.show()
+    #for i in np.arange(0,Nx-10): # this is x
+    #    intp=np.polyfit(xi[i:i+10+1], Exy[i:i+10+1,i],8)
+    #    p10 = np.poly1d(intp)
+    #    for j in np.arange(i,Nx): # this is y, y is faster
+    #        Eyxy[i,j,:]=p10(xji[j,:])
+    #for i in np.arange(Nx-10,Nx): # this is x
     #    for j in np.arange(i,Nx): # this is y
     #        for k in np.arange(Nm):
     #            Eyxy[i,j,k]=0.5*np.pi*np.sqrt(xji[j,k]**2-xi[i]**2+eps)
-    #
+    return 
+    
 
 
 
