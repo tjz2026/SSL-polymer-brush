@@ -1,0 +1,300 @@
+\documentclass{article}
+%\usepackage{graphics}
+%\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage{color}
+
+%opening
+\title{Numerical SSL solution of melt polymer brush }
+\author{Jiuzhou Tang}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+\end{abstract}
+
+\section{SSL theory of melt polymer brush}
+The most import characteteristic of the polymer brush is that one end of the chain is grafted onto a solid surface at z=0. Let us
+assume that this end segment is specified by s=N. We then obtain the constaint condition:
+\begin{equation}
+ z(N)=0
+\end{equation}
+The other end segment s=0 is free, and is called as the free end. The boundary condition at s=0 is given by:
+\begin{equation}
+ z'(0)=0,
+\end{equation}
+The maximum of polymer brush height is denoted as $h$, note that all coordinates are scaled by $h$. The normalized end point distribution function is $g(y)$.
+The local tension function, $E(x,y)$, is defined as:
+\begin{equation}
+ E(x,y)=\frac{dz(s)}{ds}|^{z(0)=y}_{z(s)=x}, x<=y
+\end{equation}
+the inverse of $E(x,y)$, denoted as $\phi(x,y)$.
+We can write down the monomer density $\Phi(x)$ as
+\begin{equation}
+ \Phi(x)=\int^{1}_{x} g(y)\phi(x,y)dy=\int^{1}_{x} g(y)E^{-1}(x,y)dy
+ \label{eqn:dens}
+ \end{equation}
+the free energy of polymer brush melt mainly comes from the elascity of polymer chains, which can be writen as,
+\begin{equation}
+ f_{e}=3/4\Delta^2\int^{1}_{0}dy\int^{y}_{0}dxg(y)E(x,y),  \Delta=h/a\sqrt{N}
+\end{equation}
+
+Two constraints are needed, one is the incompressibility of polymer brush,i.e., 
+\begin{equation}
+ \Phi(x)=\int^{1}_{x} g(y)E^{-1}(x,y)dy=1
+\end{equation}
+and the equal length condition, which requires that polymer chain has fixed length of $N$.
+\begin{equation}
+ \Lambda(y)=\int^{y}_{0}dxE^{-1}(x,y)=1
+ \label{eqn:equal-length}
+\end{equation}
+Now minimize the free energy subject to the two above constraints, 
+we define:
+\begin{equation}
+ \Omega=f_e+\int^{1}_{0}dx\phi(x)\Phi(x)+\int^{1}_{0}dy\lambda(y)\Lambda(y)
+\end{equation}
+Set the variation of $\Omega$ with respect to $E(x,y)$, $g(y)$, we have:
+\begin{eqnarray}
+\frac{D\Omega}{DE} =\frac{3}{4}\Delta^2g(y)-[g(y)\phi(x)+\lambda(y)]E^{-2}(x,y)=0
+\end{eqnarray}
+\begin{eqnarray}
+\frac{D\Omega}{Dg}=\int^{y}_{0}\frac{3}{4}\Delta^2E(x,y)+\phi(x)E^{-1}(x,y)=0
+\label{eqn:F3}
+\end{eqnarray}
+
+Now we have the SSL nonlinear equation set as:
+\begin{eqnarray}
+F_1(\mathbf{X})= \Phi(x)-1=\int^{1}_{x} g(y)E^{-1}(x,y)dy-1=0 \\
+F_2(\mathbf{X})=\Lambda(y)-1=\int^{y}_{0}dxE^{-1}(x,y)-1=0 \\
+F_3(\mathbf{X})=\int^{y}_{0}\frac{3}{4}\Delta^2E(x,y)+\phi(x)E^{-1}(x,y)dx=0
+\end{eqnarray}
+where $\mathbf{X}=({g,\phi,\lambda})$, and
+\begin{equation}
+ E^{2}(x,y)=\frac{4}{3}\Delta^{-2}(\phi(x)+\frac{\lambda(y)}{g(y)})
+ \label{eqn:Exy}
+\end{equation}
+
+
+
+
+
+
+
+\section{Classical theory sloution}
+The Classical trajectory corresponds to the solution $z(s)$ that starts from $z(0)$ and arrives at $z(1)$ at the time $s=1$, irrespective
+of its initial position $z(0)$. Such a feature is realized by adopting the isochonisms of a pendulum, thus we can the solution of
+the trajectory as
+\begin{equation}
+ z(s)=z_0\cos(\pi s/2)
+\end{equation}
+now we can calculate the distribution function $\phi(x,y)$,
+\begin{equation}
+ \phi(x,y)=\frac{ds}{dz(s)}=\frac{2}{\pi}\frac{1}{\sqrt{y^2-x^2}}
+\end{equation}
+The monomer density of polymer brush is given by Eq.\ref{eqn:dens}, the $g(y)$ function can be inverted to obtain,
+\begin{equation}
+ g(y)=\frac{y}{(1-y^2)^{1/2}}
+\end{equation}
+
+Substitue the above sloution of $g(y)$ and $\phi(x,y)$ into the SSL theory,
+we can prove that 
+\begin{equation}
+ \phi(x)=-\frac{3}{4}\Delta^{2}\frac{\pi^2 x^2}{4}
+\end{equation}
+thus inserting these solutions to Eq.\ref{eqn:Exy}, we have,
+\begin{equation}
+ \lambda(y)=\frac{3\pi^2}{16}\Delta^2y^2g(y)=\frac{3\pi^2}{16}\Delta^2\frac{y^3}{(1-y^2)^{1/2}}
+\end{equation}
+
+\section{Numerical implemention of SSL theory}
+Since we have the solution from classical trajectory theory, we can use these solutions as the input for the nonlinear 
+equations derived from SSL theory. The trick part of the numerical solution is to evalue the numerical integrals 
+accurately, since there are singular functions like $g(y)$ and $E^{-1}(x,y)$ invloved. Some numerical experiments are done before
+finally solve the problem.
+
+We rely on the interpolation of the coarse grid when the integrals contains the singular part.
+For example, to accurately evalue the integral of the normalized $g(y)$ function, i.e.,
+$\int^{1}_{0}g(y)dy=1$, we need to carefully deal with the singular part when $y$ approaches 1.
+
+We have two set of grids, one is coarse and the other is fine, the coarse grid has $Nx$ grid sites and is defined as
+\begin{equation}
+ x_c(i)=(i+1)\frac{1}{(Nx+1)}, i=0,1,2,...Nx-1
+\end{equation},
+and the fine grid is defined as
+\begin{equation}
+ x_f(i,j)=x_c(i-1)+(j+1)\frac{1}{(Nx+1)(Nm+1)}, j=0,1,2,...Nm-1
+ \end{equation}
+ for each $i$ defined on the coarse grid.
+Note that $x_c(i=-1)=0$ and $x_c(i=Nx)=1$, although both are not included in our computation.
+
+We set $Nx=100$ and $Nm=200$, when dealing with the integral of $g(y)$, first, we use the polynomial  interpolation for 
+the last $N_f$ points on the coarse grid and get the value of $g(y)$ on the fine grid. The value of the integral is
+the summation of the $Nx-N_f$ grids on the coarse grid and the rest part on the fine grid.
+Below is some numerical results we tested.
+\begin{center}
+    \begin{tabular}{ l | l | l |}
+    \hline
+    Nx & Nm & Integral value \\ \hline
+     100 & 200 & 0.948365880741 \\ \hline
+     100 & 400 & 0.948502392298 \\ \hline
+     200 & 200 & 0.962247412428 \\ \hline
+     200 & 400 & 0.962346717998 \\ \hline
+     400 & 200 & 0.971917239189 \\ \hline
+    \end{tabular}
+\end{center}
+
+It seems that polynomial interpolation is not good, but still fine, however, the later numerical test will 
+show that the polynomial interpolation should not be used when dealing with the sigular function such as 
+$g(y)=\frac{y}{\sqrt(1-y^2)}$. The problem is that we not only need to do the interpolation, but also the extrapolation,
+and it turns out that polynomial expansion is not suitable to extrapolate the singular function.
+
+\begin{figure}[h]
+\includegraphics[width=12cm]{gy2.eps}
+\caption{The polynomial extrapolation at the range of $x\in[0.99,1.0]$. The rank of polynomial
+expansion and the interval of the interpolated interval on the coarse grid are tuned to improve the
+result. However, this is the best we can get.}
+\end{figure}
+
+
+Now we need to use a more suitable interpolation scheme to improve the accuracy of the numerical integral.
+Below we suggest a numerical trick to avoid the sigular problem. for example,
+\begin{equation}
+ \Phi(0)=\int^{1}_{0}g(y)E^{-1}(x,y)dy
+\end{equation}
+instead of doing the interpolation with $g(y)$, we could change the integral as
+\begin{equation}
+ \Phi(0)=\int^{1}_{0}(g(y)\sqrt{1-y^2})\frac{1}{\sqrt{1-y^2}}E^{-1}(x,y)dy
+\end{equation}
+
+Note that the combination $g(y)\sqrt{1-y^2}$ is no longer singular at $y=1$, since we expect that $g(y)$ takes the form in the classical
+trajectory, and we can do the polynomial interpolation for the combination function.
+\begin{figure}[h]
+\includegraphics[width=12cm]{gy3}
+\caption{Attempt to eliminate the singularity at $y=1$, as explained above.}
+\end{figure}
+
+Using this scheme, we can increase the accuracy of numerical evaluation of $\Phi(0)$ from $0.70$ to $0.91$,
+still not very good, but it is an improvement indeed.
+
+\section{ Numerical details for solving the nonlinear equations from SSL theory}
+One remaining nasty problem of solving the nonlinear equations set is that when the solution variables are
+ajusted towards the converged solution, the $E^2(x,y)$ function, according to Eq.\ref{eqn:Exy}, is very likely to
+become negative, which produces $nan$ and the nonlinear solver eventually fails to work.
+
+We find another trick that might avoid the above difficulties. Since the $g(y)$, $E^{-1}(x,y)$ functions are singular,
+(actually, there is a term for such singularity called Maxwellian singularity), we can replace the original functions
+we aim to solve by:
+\begin{equation}
+ f(y)=\sqrt{1-y^2}g(y) 
+ \end{equation}
+ \begin{equation}
+ G(x,y)=\sqrt{y^2-x^2}E^{-1}(x,y)
+\end{equation}
+
+Now we can do the integral of $g(y)$ as:
+\begin{equation}
+ \int^{1}_{0}\frac{f(y)}{\sqrt{1-y^2}}dy=\int^{\pi/2}_{0}f(\sin\theta)d\theta
+\end{equation}
+where $y=\sin\theta$, since we expect $g(y) \rightarrow \frac{y}{\sqrt{1-y^2}}$, $f(y)$ function shoud be a smooth function and the integral
+should be done easily.
+
+Similarly, we can do the integral of $E^{-1}(x,y)$ as:
+\begin{equation}
+\Lambda(y)= \int^{y}_{0}\frac{G(x,y)}{\sqrt{1-(\frac{x}{y})^2}}d(\frac{x}{y})=\int^{\pi/2}_{0}G(y\sin t,y)dt
+\end{equation}
+where $\sin t=\frac{x}{y}$, and with such replacement, we can do the integral of the smooth $G(x,y)$ function.
+Eq.\ref{eqn:dens} can be now calculated as:
+\begin{equation}
+ \Phi(x)=\int^{1}_{x}g(y)E^{-1}(x,y)dy=\int^{\pi/2}_{\theta'}f(\sin \theta)\frac{G(x,\sin\theta)}{\sqrt{\sin^2\theta-x^2}}d\theta
+\end{equation}
+we substract the remaining singularity as:
+\begin{equation}
+ \int^{\pi/2}_{\theta'}(f(\sin \theta)\frac{G(x,\sin\theta)}{\sqrt{\sin^2\theta-x^2}}-\frac{\sin\theta}{\sqrt{\sin^2\theta-x^2}}d\theta
+\end{equation}
+and the remaining part can be integrated analytically,
+\begin{equation}
+ \int^{1}_{x}\frac{y/\sqrt{1-y^2}}{\sqrt{y^2-x^2}}dy=1
+\end{equation}
+
+
+And we rewrite Eq.\ref{eqn:Exy} as :
+\begin{equation}
+ G^{-2}(x,y)(y^2-x^2)=\frac{4}{3}\Delta^{-2}(\phi(x)+\lambda(y)\frac{\sqrt{1-y^2}}{f(y)})
+\end{equation}
+
+We will solve the SSL equations on the mesh of variables $\theta$ and $t$ mesh with uniform spacing:
+\begin{equation}
+ \theta_i=t_i=(i+1)h, \quad i=0,1,...,N_{\theta}-1, \qquad h=1/N_{\theta}
+\end{equation}
+
+and variable $x$ and $y$ are connected with $\theta$ and $t$ through:
+\begin{equation}
+ y_i=\sin \theta_i ; \qquad  x_i=y_i\sin t_i=\sin\theta_i\sin t_i
+\end{equation}
+the functions to be solved are now replaced by:
+\begin{eqnarray}
+\begin{align*}
+ g(y)   \rightarrow  f(\theta) : f(\theta_i)=\sqrt{1-\sin^2(\theta_i)}g(\sin\theta_i) \\
+  E(x,y) \rightarrow G(\theta,t) : G(\theta_i,t_j)=\sqrt{\sin^2(\theta_i)-\sin^2\theta_i\sin^2(t_i)}E(\sin\theta_i\sin t_j,\sin\theta_i) \\
+  E(x,y) \rightarrow G'(\theta,t) : G'(\theta_i,t_j)=\sqrt{\sin^2(\theta_i)-\sin^2(t_i)}E(\sin t_j,\sin\theta_i) \qquad t_j<=\theta_i \\
+  \phi(x) \rightarrow \phi(\theta_i) \\
+  \lambda(y) \rightarrow \lambda(\theta_i) \\
+ \end{align*}
+\end{eqnarray}
+
+the SSL nonlinear integral equations now become:
+\begin{eqnarray}
+ F_1(i)=\Phi(i)-1=\int^{\pi/2}_{t_i}f(\theta)\frac{G'(\theta,t_i)}{\sqrt{\sin^2(\theta)-\sin^2(t_i)}}d\theta-1\\
+ F_2(i)=\Lambda(i)-1=\int^{\pi/2}_{0}G(\theta_i,t)dt-1\\
+ F_3(i)=\int^{\pi/2}_{0}G(\theta_i,t)\phi(t)+\frac{3}{4}\Delta^2 \frac{(\sin^2\theta_i-\sin^2\theta_i\sin^2t)}{G(\theta_i,t)}dt
+\end{eqnarray}
+where 
+\begin{eqnarray}
+ G^{-2}(\theta_i,t_j)\sqrt{\sin^2\theta_i-\sin^2\theta_i\sin^2t_j}=\frac{3}{4}\Delta^2(\phi(\sin\theta_i\sin t_j) +\lambda(\sin\theta_i)\frac{\sqrt{1-\sin^2\theta_i}}{f(\sin\theta_i)})\\
+ G'^{-2}(\theta_i,t_j)\sqrt{\sin^2\theta_i-\sin^2t_j}=\frac{3}{4}\Delta^2(\phi(\sin t_j) +\lambda(\sin\theta_i)\frac{\sqrt{1-\sin^2\theta_i}}{f(\sin\theta_i)}) \qquad t_j<=\theta_i\\
+\end{eqnarray}
+Here we must emphasize that $\textcolor{red}{G(\theta_i,t_j)}$ and $\textcolor{red}{G'(\theta_i,t_j)}$ are two different functions.
+The solution functions are defined on evenly spaced $\theta$ or $t$ mesh grid, that is,
+\begin{eqnarray}
+ f_i=f(\sin\theta_i) \\
+ \phi_i=\phi(\sin\theta_i)\\
+ \lambda_i=\lambda(\sin\theta_i)\\
+\end{eqnarray}
+thus we need to provide the value of $\phi(\sin\theta_i\sin t_j)$ from the given collection of values of $\phi(\sin\theta_i)$.
+\subsection{coding details}
+First, we test the accuracy of numerical integral with the analytical solution,
+
+%the simplest scheme is the  trapzoidal rule, such as:
+%\begin{equation}
+%\int^{t_i}_{0} f(\sin t)dt=h(\frac{1}{2}f(0)+\sum^{i-1}_{j=1}f_j +\frac{1}{2}f_i)
+%\end{equation}
+
+
+
+
+
+
+
+
+\section{corrections to the entropy of free end}
+Now we account for the entropic contribution due to the free ends as
+\begin{equation}
+ f_g=\int^{1}_{0}dyg(y)ln(g(y)/\Delta)
+\end{equation}
+and this correction only leads to a modification of Eq.\ref{eqn:F3},
+\begin{equation}
+ \frac{D\Omega}{Dg}=\int^{y}_{0}\frac{3}{4}\Delta^2E(x,y)+\phi(x)E^{-1}(x,y)+ln(g(y)/\Delta)+1=0
+\end{equation}
+
+
+
+
+
+
+
+\end{document}
